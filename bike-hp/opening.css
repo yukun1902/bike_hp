@@ -1,0 +1,523 @@
+/* =========================================================
+   Opening - opening.css
+   オープニング演出の「見た目」を書いているファイルです。
+   「暗闇 → IGNITION → 消灯した車体 → ヘッドライト点灯 → 本編」
+
+   opening.js が .opening に次のクラスを順番に付けていき、
+   それぞれのクラスが付いたときの見た目をこのファイルで指定しています。
+     is-ready     … IGNITION が浮かび上がる
+     is-ignited   … IGNITION を押した
+     is-light-off … ライトが消えた車体が見えてくる
+     is-light-on  … ライトが点灯する
+     is-exit      … 本編へ切り替わる
+     is-done      … オープニングが消える
+
+   ※ このファイルと opening.js を外せば、演出なしのページに戻ります
+
+   【よく使っている書き方】
+   ・--op-〇〇 のような「--」で始まる名前は CSS 変数（自分で作れる値の入れ物）
+   ・transition … 値が変わるときに、なめらかに変化させる
+   ・animation + @keyframes … 決めた流れどおりに変化させる
+   ・opacity … 透明度（0 = 見えない / 1 = 見える）
+   ・filter: brightness() … 明るさ（0 = 真っ黒 / 1 = 元の明るさ）
+   ・transform: scale() … 拡大・縮小（1 = 元の大きさ）
+   ========================================================= */
+
+/* ライトが照らす範囲（--op-r）をなめらかに広げるための設定。
+   CSS 変数は普通は途中の値を作れないため、「これは % の値です」と登録しておきます */
+@property --op-r {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+
+/* ---------- 演出中は本編を隠す ---------- */
+/* opening.js が <html> に is-opening クラスを付けている間だけ有効 */
+html.is-opening,
+html.is-opening body { overflow: hidden; } /* スクロールできないようにする */
+html.is-opening body { background: #000; }
+html.is-opening .header,
+html.is-opening main,
+html.is-opening .footer { visibility: hidden; } /* 本編を見えなくする */
+
+/* ---------- オープニング全体 ---------- */
+.opening {
+  /* このファイル内で使う色と動きのカーブ */
+  --op-gold: #c9a063;
+  --op-ease-out: cubic-bezier(.16, 1, .3, 1); /* 最初は速く、最後はゆっくり */
+  --op-ease-in: cubic-bezier(.7, 0, .84, 0);  /* 最初はゆっくり、最後は一気に */
+
+  position: fixed; /* 画面に固定 */
+  inset: 0;        /* 上下左右 0 = 画面いっぱい */
+  z-index: 9999;   /* 一番手前に表示 */
+  background: #000;
+  overflow: hidden;
+  transition: opacity 1.4s ease;
+}
+/* 終了時：フェードアウト */
+.opening.is-done { opacity: 0; pointer-events: none; }
+
+/* ---------- シーン（画像）共通 ---------- */
+.op-camera { position: absolute; inset: 0; } /* 全シーンをまとめる枠（振動させるときに使う） */
+.op-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0; /* 最初は見えない */
+}
+
+/* 画像と光をまとめて動かすための枠。
+   画像と同じ縦横比にしているので、光の位置を「画像の何%の位置」で指定できます */
+.op-stage {
+  --op-s: 1; /* 拡大率 */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  /* 画面の中央に置いて、--op-s の分だけ拡大 */
+  transform: translate(-50%, -50%) scale(var(--op-s));
+  /* 拡大の中心 = ヘッドライトの位置（ライトに向かってズームするため） */
+  transform-origin: var(--op-x) var(--op-y);
+}
+.op-stage img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: brightness(0); /* 最初は真っ黒 */
+  /* マスク：ライトの位置を中心に、半径 --op-r の範囲だけ画像を見せる
+     （--op-r を大きくしていくと、中心から外側へ見える範囲が広がる） */
+  -webkit-mask-image: radial-gradient(circle farthest-corner at var(--op-x) var(--op-y), #000 var(--op-r), transparent calc(var(--op-r) + 38%));
+          mask-image: radial-gradient(circle farthest-corner at var(--op-x) var(--op-y), #000 var(--op-r), transparent calc(var(--op-r) + 38%));
+}
+
+/* ライト点灯前：車体の正面（front.jpg） */
+.op-stage--front {
+  --op-x: 48.5%;  /* ヘッドライトの横位置 */
+  --op-y: 43%;    /* ヘッドライトの縦位置 */
+  --op-s: 1.1;    /* 少し拡大した状態から始める */
+  --op-r: 0%;     /* 最初は何も見えない */
+  width: 100vw;   /* 画面の横幅いっぱい */
+  aspect-ratio: 2048 / 1696; /* 画像と同じ縦横比 */
+  transition:
+    transform 3.4s cubic-bezier(.33, 0, .15, 1),
+    --op-r 3s cubic-bezier(.45, 0, .2, 1);
+}
+.op-stage--front img { transition: filter 3s ease; }
+
+/* ライト点灯後：ヘッドライトのアップ（headlight.jpg） */
+.op-stage--headlight {
+  --op-x: 50%;
+  --op-y: 62%;
+  --op-s: .94;
+  --op-r: 100%;   /* 画像全体を見せる */
+  width: max(100vw, 133.34vh); /* 画面全体を覆う大きさ（4:3 の画像なので 高さ×1.3334） */
+  aspect-ratio: 4 / 3;
+  transition: transform 6s linear; /* ゆっくりズームし続ける */
+}
+
+/* スマホなどの縦長画面 */
+@media (orientation: portrait) {
+  /* 写真が画面全体を覆うサイズに（上下に境目が出ないように） */
+  .op-stage--front { width: max(150vw, 120.76vh); }
+}
+
+/* ---------- 光 ---------- */
+/* 光はすべて CSS のグラデーションで描いています */
+.op-light {
+  position: absolute;
+  left: var(--lx);
+  top: var(--ly);
+  width: var(--size);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(.2);
+  opacity: 0;
+  mix-blend-mode: screen; /* 下の画像に光を「足す」重ね方（明るくなる） */
+  pointer-events: none;
+}
+/* ライト本体の光（中心が白く、外側に向かって薄い青に消えていく） */
+.op-light--core {
+  background: radial-gradient(circle,
+    rgba(255, 255, 255, .95) 0%,
+    rgba(225, 238, 255, .6) 14%,
+    rgba(150, 190, 255, .18) 34%,
+    transparent 62%);
+}
+/* 周囲の暗闇をうっすら照らす広い光 */
+.op-light--spill {
+  background: radial-gradient(circle,
+    rgba(200, 220, 255, .22) 0%,
+    rgba(160, 190, 240, .08) 35%,
+    transparent 65%);
+}
+/* 横に伸びる光の筋（映画のようなレンズフレア） */
+.op-flare {
+  position: absolute;
+  left: var(--lx);
+  top: var(--ly);
+  width: 160%;
+  height: 2px;
+  transform: translate(-50%, -50%) scaleX(0); /* 最初は横幅 0 */
+  background: linear-gradient(90deg, transparent, rgba(170, 205, 255, .55) 35%, #fff 50%, rgba(170, 205, 255, .55) 65%, transparent);
+  filter: blur(1px);
+  opacity: 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* 点灯前にライト部分を暗く隠す影（点灯とともに消える）
+   ※ headlight.jpg は元からライトが点いている写真なので、この影で「消えている状態」を作っています */
+.op-lamp-off {
+  position: absolute;
+  left: var(--lx);
+  top: var(--ly);
+  width: var(--size);
+  aspect-ratio: 1.3; /* 横長の楕円 */
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse closest-side, rgba(0, 0, 0, .88) 55%, transparent 100%);
+  pointer-events: none;
+}
+
+/* 画面の四隅を暗く落とす（視線を中央に集める） */
+.op-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0, 0, 0, .9) 100%);
+  pointer-events: none;
+}
+
+/* 本編へ切り替わる瞬間の白い光 */
+.op-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 45%, #fff 0%, #f1f4fb 45%, #d9dfeb 100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- IGNITION ボタン ---------- */
+/* 画面中央に配置する枠 */
+.op-intro {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column; /* 縦に並べる */
+  align-items: center;    /* 横方向の中央 */
+  justify-content: center; /* 縦方向の中央 */
+  gap: 28px;
+  padding: 0 16px;
+}
+.op-ignition {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 3vw, 36px); /* clamp(最小, 基本, 最大)：画面幅に合わせて変わる */
+  padding: 18px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #cfcac1;
+  font-family: "Marcellus", serif;
+  font-size: clamp(1.5rem, 4.2vw, 3rem);
+  letter-spacing: .5em; /* 文字の間隔を広げて高級感を出す */
+  line-height: 1;
+  transition: color .6s ease;
+  -webkit-tap-highlight-color: transparent; /* スマホでタップしたときの青い枠を消す */
+}
+/* letter-spacing で最後の文字の後ろにも余白ができるので、打ち消して中央に揃える */
+.op-ignition__text { margin-right: -.5em; display: inline-flex; }
+
+/* 文字の左右の細い金色の線（::before が左、::after が右） */
+.op-ignition::before,
+.op-ignition::after {
+  content: "";
+  width: clamp(28px, 6vw, 72px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--op-gold));
+  transform: scaleX(0); /* 最初は長さ 0 */
+  transition: transform 1.2s var(--op-ease-out) 1.2s, width .6s var(--op-ease-out);
+}
+.op-ignition::after { background: linear-gradient(90deg, var(--op-gold), transparent); }
+
+/* 1文字ずつの <span>（最初は透明・ぼかし・少し下にずらしておく） */
+.op-letter {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(8px);
+}
+
+/* 「PRESS TO START ENGINE」 */
+.op-hint {
+  font-family: "Marcellus", serif;
+  font-size: clamp(.6rem, 1.4vw, .72rem);
+  letter-spacing: .45em;
+  color: #6f6b64;
+  opacity: 0;
+  transition: opacity 1.4s ease 1.8s; /* 1.8秒遅れて表示 */
+}
+
+/* is-ready：IGNITION が暗闇から浮かび上がる */
+.opening.is-ready .op-letter {
+  animation: op-letter-in 1.8s var(--op-ease-out) forwards;
+  animation-delay: calc(var(--i) * 90ms); /* 1文字ごとに 0.09秒ずつ遅らせる */
+}
+.opening.is-ready .op-ignition::before,
+.opening.is-ready .op-ignition::after { transform: scaleX(1); } /* 線が伸びる */
+.opening.is-ready .op-hint { opacity: 1; }
+/* 待っている間はかすかに光ったり消えたりする（スタンバイランプのように） */
+.opening.is-ready .op-ignition__text { animation: op-standby 3.6s ease-in-out 2.4s infinite; }
+
+@keyframes op-letter-in {
+  to { opacity: 1; filter: blur(0); transform: none; }
+}
+@keyframes op-standby {
+  0%, 100% { text-shadow: 0 0 0 rgba(255, 230, 190, 0); }
+  50% { text-shadow: 0 0 14px rgba(255, 230, 190, .28); }
+}
+
+/* マウスを乗せたとき：少し明るく、わずかに光る
+   （hover: hover = マウスが使える端末だけ。スマホでは無効） */
+@media (hover: hover) {
+  .opening.is-ready .op-ignition:hover { color: #fff; }
+  .opening.is-ready .op-ignition:hover .op-ignition__text {
+    animation: none;
+    text-shadow: 0 0 18px rgba(255, 232, 195, .55), 0 0 42px rgba(201, 160, 99, .35);
+  }
+  .opening.is-ready .op-ignition:hover::before,
+  .opening.is-ready .op-ignition:hover::after {
+    width: clamp(40px, 9vw, 110px); /* 線が少し伸びる */
+    transition-delay: 0s;
+  }
+}
+/* キーボードで選択したときの枠線 */
+.op-ignition:focus-visible { outline: 1px solid var(--op-gold); outline-offset: 8px; }
+
+/* ---------- SKIP ボタン ---------- */
+.op-skip {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: "Marcellus", serif;
+  font-size: .68rem;
+  letter-spacing: .3em;
+  color: #6f6b64;
+  opacity: 0;
+  transition: color .3s, opacity 1s ease 2s;
+}
+.opening.is-ready .op-skip { opacity: 1; }
+.op-skip:hover { color: #cfcac1; }
+
+/* ---------- SOUND ON / OFF ボタン（左下） ---------- */
+.op-sound {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: "Marcellus", serif;
+  font-size: .68rem;
+  letter-spacing: .3em;
+  color: #6f6b64;
+  opacity: 0;
+  transition: color .3s, opacity 1s ease 2s;
+}
+.opening.is-ready .op-sound { opacity: 1; }
+.op-sound:hover { color: #cfcac1; }
+.op-sound__state { color: var(--op-gold); }
+.op-sound.is-off .op-sound__state { color: inherit; }
+
+/* 音量メーターのような3本のバー */
+.op-sound__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 10px;
+}
+.op-sound__bars i {
+  width: 2px;
+  height: 100%;
+  background: currentColor;
+  transform-origin: bottom;
+  transform: scaleY(.3);
+}
+/* エンジンがかかったら（is-light-on）バーが揺れる */
+.opening.is-light-on .op-sound:not(.is-off) .op-sound__bars i {
+  animation: op-bars .5s ease-in-out 1s infinite alternate;
+}
+.opening.is-light-on .op-sound__bars i:nth-child(2) { animation-delay: 1.15s; }
+.opening.is-light-on .op-sound__bars i:nth-child(3) { animation-delay: 1.3s; }
+@keyframes op-bars {
+  from { transform: scaleY(.3); }
+  to { transform: scaleY(1); }
+}
+
+/* =========================================================
+   演出の流れ（opening.js がクラスを順に付けていきます）
+   ========================================================= */
+
+/* ---------- 1. is-ignited：IGNITION を押した瞬間 ---------- */
+.opening.is-ignited .op-ignition { pointer-events: none; } /* もう押せないようにする */
+.opening.is-ignited .op-intro { animation: op-crank .5s linear; } /* 小さく振動 */
+.opening.is-ignited .op-letter {
+  animation: op-letter-out .9s ease forwards; /* 文字が明滅して消える */
+  animation-delay: calc(var(--i) * 25ms);
+}
+.opening.is-ignited .op-ignition::before,
+.opening.is-ignited .op-ignition::after {
+  transform: scaleX(0); /* 線が縮んで消える */
+  transition: transform .5s var(--op-ease-in);
+}
+.opening.is-ignited .op-hint { opacity: 0; transition: opacity .4s; }
+
+/* 文字が一瞬暗くなり、パッと光ってから消えていく */
+@keyframes op-letter-out {
+  0% { opacity: 1; filter: blur(0); color: #fff; }
+  12% { opacity: .15; }
+  22% { opacity: 1; text-shadow: 0 0 24px rgba(255, 240, 215, .9); }
+  100% { opacity: 0; filter: blur(8px); text-shadow: 0 0 40px rgba(255, 240, 215, 0); }
+}
+/* エンジンのセルを回したときのような細かい振動 */
+@keyframes op-crank {
+  0%, 100% { transform: none; }
+  20% { transform: translate(1px, -1px); }
+  40% { transform: translate(-1px, 1px); }
+  60% { transform: translate(1px, 1px); }
+  80% { transform: translate(-1px, 0); }
+}
+
+/* シーンの表示・非表示はフェードで切り替える */
+.op-scene--front,
+.op-scene--headlight { transition: opacity 1.2s ease; }
+
+/* ---------- 2. is-light-off：ライトが消えた車体が暗闇から浮かび上がる ---------- */
+.opening.is-light-off .op-scene--front { opacity: 1; }
+.opening.is-light-off .op-stage--front { --op-s: 1; --op-r: 110%; } /* 少しズームアウトしながら、見える範囲を広げる */
+.opening.is-light-off .op-stage--front img { filter: brightness(.85); } /* 少しずつ明るく */
+
+/* ---------- 3. is-light-on：ヘッドライト点灯 ---------- */
+/* (1) 車体がライトへズームしながら暗闇に沈む */
+.opening.is-light-on .op-stage--front {
+  --op-s: 1.75;
+  transition: transform 1.4s cubic-bezier(.65, 0, .35, 1);
+}
+.opening.is-light-on .op-stage--front img { filter: brightness(.1); transition: filter 1s ease-in; }
+.opening.is-light-on .op-scene--front { opacity: 0; transition: opacity .6s ease .7s; }
+
+/* (2) 入れ替わりに、ライトのアップ（headlight.jpg）が現れる */
+.opening.is-light-on .op-scene--headlight { opacity: 1; transition: opacity .9s ease .6s; }
+.opening.is-light-on .op-stage--headlight { --op-s: 1.1; } /* ゆっくり寄っていく */
+
+/* (3) 1秒後から、ライトが明滅しながら徐々に強く点灯する
+   animation: 名前 長さ 動き方 遅延 both（開始前も終了後も、その状態を保つ） */
+.opening.is-light-on .op-stage--headlight img { animation: op-power-on 2.6s ease-out 1s both; }
+.opening.is-light-on .op-lamp-off { animation: op-lamp-on 2.6s ease-out 1s both; }
+.opening.is-light-on .op-light--core { animation: op-glow-on 2.2s ease-out 1s both; }
+.opening.is-light-on .op-light--spill { animation: op-glow-on 2.8s ease-out 1.25s both; }
+.opening.is-light-on .op-flare { animation: op-flare-on 2.4s var(--op-ease-out) 1.15s both; }
+/* エンジンがかかった後の、かすかなアイドリング振動（infinite = ずっと繰り返す） */
+.opening.is-light-on .op-camera { animation: op-idle .11s linear 1s infinite; }
+
+/* 車体の明るさ：光のちらつきに合わせて明るくなったり暗くなったりしながら、最後は明るく */
+@keyframes op-power-on {
+  0% { filter: brightness(.45); }
+  10% { filter: brightness(.55); }
+  14% { filter: brightness(.75); }
+  18% { filter: brightness(.5); }
+  26% { filter: brightness(.85); }
+  32% { filter: brightness(.65); }
+  100% { filter: brightness(1.05); }
+}
+/* ライトを隠す影：ちらつきながら消えていく */
+@keyframes op-lamp-on {
+  0% { opacity: 1; }
+  8% { opacity: .5; }
+  12% { opacity: 1; }
+  20% { opacity: .3; }
+  26% { opacity: .75; }
+  100% { opacity: 0; }
+}
+/* ライトの光：ちらつきながら大きく・強くなる */
+@keyframes op-glow-on {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.2); }
+  8% { opacity: .75; }
+  12% { opacity: .2; }
+  20% { opacity: .85; }
+  26% { opacity: .45; }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+/* 光の筋：中央から左右に伸びる */
+@keyframes op-flare-on {
+  0% { opacity: 0; transform: translate(-50%, -50%) scaleX(0); }
+  30% { opacity: .9; }
+  100% { opacity: .45; transform: translate(-50%, -50%) scaleX(1); }
+}
+/* アイドリング振動（1px 未満のごく小さな揺れ） */
+@keyframes op-idle {
+  0%, 100% { translate: 0 0; }
+  25% { translate: .6px -.4px; }
+  50% { translate: -.5px .5px; }
+  75% { translate: .4px .3px; }
+}
+
+/* ---------- 4. is-exit：ライトへ一気に吸い込まれ、光の中から本編が現れる ---------- */
+.opening.is-exit .op-camera { animation: none; } /* 振動を止める */
+.opening.is-exit .op-stage--headlight {
+  --op-s: 3.2;                        /* 一気にライトへズーム */
+  filter: brightness(1.6) blur(4px);  /* 明るく、ぼかす */
+  transition:
+    transform 1.1s var(--op-ease-in),
+    filter 1.1s var(--op-ease-in);
+}
+.opening.is-exit .op-flash { opacity: 1; transition: opacity 1.1s var(--op-ease-in); } /* 画面が白い光に包まれる */
+
+/* =========================================================
+   本編の登場（opening.js が <html> に is-revealed を付けたとき）
+   ========================================================= */
+html.is-revealed .hero__visual { overflow: hidden; } /* 拡大した画像がはみ出さないように */
+/* トップ画像：明るく拡大した状態から、元の大きさ・明るさに戻る */
+html.is-revealed .hero__visual img { animation: op-hero-in 2.4s var(--op-ease-out, cubic-bezier(.16, 1, .3, 1)) both; }
+/* ヘッダー：フェードイン */
+html.is-revealed .header { animation: op-fade-in 1.2s ease .9s both; }
+/* キャッチコピーなど：下から順番にふわっと表示 */
+html.is-revealed .hero__content > *,
+html.is-revealed .pager {
+  animation: op-rise-in 1.2s cubic-bezier(.16, 1, .3, 1) both;
+}
+html.is-revealed .hero__content > :nth-child(1) { animation-delay: 1s; }
+html.is-revealed .hero__content > :nth-child(2) { animation-delay: 1.15s; }
+html.is-revealed .hero__content > :nth-child(3) { animation-delay: 1.3s; }
+html.is-revealed .hero__content > :nth-child(4) { animation-delay: 1.45s; }
+html.is-revealed .pager { animation-delay: 1.6s; }
+
+@keyframes op-hero-in {
+  from { transform: scale(1.14); filter: brightness(1.8) blur(4px); }
+  to { transform: none; filter: none; }
+}
+@keyframes op-fade-in { from { opacity: 0; } }
+@keyframes op-rise-in { from { opacity: 0; transform: translateY(16px); } }
+
+/* =========================================================
+   端末の設定で「動きを減らす」がオンの人向け
+   ズームや振動をなくし、シンプルな切り替えだけにします
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .opening *,
+  .opening *::before,
+  .opening *::after { animation-duration: .01ms !important; animation-delay: 0s !important; }
+  .opening.is-light-on .op-camera { animation: none; }
+  .opening .op-stage { transform: translate(-50%, -50%) !important; }
+  .opening.is-exit .op-stage--headlight { filter: none; }
+  html.is-revealed .hero__visual img,
+  html.is-revealed .header,
+  html.is-revealed .hero__content > *,
+  html.is-revealed .pager { animation: none; }
+}

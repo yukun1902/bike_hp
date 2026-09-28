@@ -1,0 +1,680 @@
+/* =========================================================
+   Hayabusa - style.css
+   サイト本編の見た目を書いているファイルです。
+   （オープニング演出の見た目は opening.css に分けています）
+
+   【よく使っている書き方】
+   ・var(--〇〇) … 下の :root で決めた色や値を呼び出す
+   ・vw … 画面の横幅に対する割合（1vw = 画面幅の1%）
+   ・clamp(最小, 基本, 最大) … 画面サイズに合わせて変わるが、最小〜最大の範囲におさめる
+   ・display: grid / flex … 要素を横や縦に並べるレイアウト方法
+   ・::before / ::after … HTML に書かずに、線や矢印などの飾りを追加する
+   ========================================================= */
+
+/* ---------- サイト全体で使う色・フォント・余白 ----------
+   ここを変えると、サイト全体の色などをまとめて変更できます */
+:root {
+  --color-bg: #0a0a0b;                     /* 背景（黒） */
+  --color-bg-2: #0e0e10;                   /* 少し明るい背景 */
+  --color-panel: rgba(8, 8, 9, .88);       /* 半透明のパネル */
+  --color-gold: #c9a063;                   /* アクセントの金色 */
+  --color-gold-light: #e0bd82;
+  --color-text: #ecebe8;                   /* 文字色 */
+  --color-muted: #a3a09a;                  /* 控えめな文字色 */
+  --color-line: rgba(201, 160, 99, .3);    /* 金色の線 */
+  --color-line-gray: rgba(255, 255, 255, .12); /* グレーの線 */
+
+  --font-en: "Marcellus", serif;           /* 英語の見出し */
+  --font-mincho: "Shippori Mincho", serif; /* 日本語の見出し（明朝体） */
+  --font-ja: "Noto Sans JP", sans-serif;   /* 本文 */
+  --font-script: "Kaushan Script", cursive; /* 筆記体（フッターの Hayabusa） */
+  --font-brush: "Yuji Syuku", serif;       /* 筆文字（HISTORY の「隼」） */
+
+  --side: 3vw;          /* 画面左右の余白 */
+  --num-col: 7vw;       /* セクション番号（01 など）の列幅 */
+}
+
+/* ---------- リセット ----------
+   ブラウザが最初から付けている余白などを消して、見た目をそろえます */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; } /* ページ内リンクでなめらかにスクロール */
+body {
+  font-family: var(--font-ja);
+  color: var(--color-text);
+  background: var(--color-bg);
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased; /* 文字をなめらかに表示（Mac） */
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; text-decoration: none; }
+ul, ol { list-style: none; } /* リストの「・」や番号を消す */
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+/* 画面には表示せず、読み上げソフトにだけ伝えるテキスト */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* =========================================================
+   共通パーツ（複数のセクションで使い回すもの）
+   ========================================================= */
+.section { position: relative; padding: 3.2vw 0; }
+
+/* セクションの中身を横に並べる枠（列の幅は各セクションで指定） */
+.section__inner {
+  display: grid;
+  align-items: center; /* 縦方向の中央にそろえる */
+  column-gap: 2.5vw;   /* 列と列のすき間 */
+  padding-inline: var(--side);
+}
+
+/* セクション番号（01 / 02 ...） */
+.sec-num {
+  font-family: var(--font-en);
+  font-size: .85rem;
+  color: var(--color-gold);
+  letter-spacing: .1em;
+}
+/* 番号の下の短い線 */
+.sec-num::after {
+  content: "";
+  display: block;
+  width: 16px;
+  height: 1px;
+  margin-top: 6px;
+  background: var(--color-gold);
+}
+
+/* 金色の英語ラベル（DESIGN など） */
+.sec-label {
+  font-family: var(--font-en);
+  font-size: clamp(1.1rem, 1.35vw, 1.5rem);
+  color: var(--color-gold);
+  letter-spacing: .14em; /* 文字の間隔 */
+  line-height: 1.3;
+}
+/* 日本語の見出し */
+.sec-title {
+  font-family: var(--font-mincho);
+  font-weight: 600;
+  font-size: clamp(1.3rem, 1.6vw, 1.9rem);
+  line-height: 1.55;
+  letter-spacing: .08em;
+  margin: .5em 0 .9em;
+}
+/* 説明文 */
+.sec-desc {
+  font-size: clamp(.8rem, .85vw, .95rem);
+  color: #cfccc6;
+  line-height: 2;
+  letter-spacing: .04em;
+  margin-bottom: 1.6em;
+}
+
+/* 金色の枠線ボタン（「デザインを見る →」など） */
+.btn-line {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between; /* 文字は左、矢印は右 */
+  gap: 2.4em;
+  min-width: 150px;
+  padding: .75em 1.4em;
+  border: 1px solid var(--color-gold);
+  font-size: .78rem;
+  letter-spacing: .1em;
+  transition: background .3s, color .3s; /* 色を 0.3秒かけて変える */
+}
+/* マウスを乗せたら金色に塗りつぶす */
+.btn-line:hover { background: var(--color-gold); color: var(--color-bg); }
+
+/* 矢印「→」を線で描く（横線 + ::after で斜めの線2本） */
+.arrow {
+  position: relative;
+  width: 12px;
+  height: 1px;
+  background: currentColor; /* 文字と同じ色 */
+}
+.arrow::after {
+  content: "";
+  position: absolute;
+  right: 0; top: -3px;
+  width: 6px; height: 6px;
+  border-top: 1px solid currentColor;
+  border-right: 1px solid currentColor;
+  transform: rotate(45deg); /* 45度回して矢印の先にする */
+}
+
+/* =========================================================
+   Header（ヘッダー）
+   ========================================================= */
+.header {
+  position: absolute; /* トップ画像の上に重ねる */
+  inset: 0 0 auto;    /* 上・左右にぴったり */
+  z-index: 10;        /* 画像より手前に表示 */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr; /* 左・中央（メニュー）・右 の3列 */
+  align-items: center;
+  height: 7.2vw;
+  padding-inline: 2.5vw;
+}
+/* ロゴはトップ画像の中に入っているので、その位置に透明なリンクだけ重ねています */
+.header__logo {
+  position: absolute;
+  left: 2.6vw;
+  top: 1.9vw;
+  width: 14.4vw;
+  height: 3.3vw;
+}
+
+/* メニュー（HOME / DESIGN ...） */
+.gnav { grid-column: 2; } /* 真ん中の列に置く */
+.gnav__list { display: flex; gap: 3.2vw; } /* 横並び */
+.gnav__link {
+  position: relative;
+  display: block;
+  padding: 6px 0;
+  font-family: var(--font-en);
+  font-size: clamp(.7rem, .72vw, .85rem);
+  letter-spacing: .12em;
+  transition: color .3s;
+}
+/* メニューの下線（最初は長さ 0） */
+.gnav__link::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: -4px;
+  width: 100%; height: 1px;
+  background: var(--color-gold);
+  transform: scaleX(0);
+  transition: transform .3s;
+}
+/* マウスを乗せたとき・今いるページ（is-current）は金色 + 下線を表示 */
+.gnav__link:hover,
+.gnav__link.is-current { color: var(--color-gold); }
+.gnav__link:hover::after,
+.gnav__link.is-current::after { transform: scaleX(1); }
+
+/* 右側（キャッチコピー + メニューボタン） */
+.header__right {
+  grid-column: 3;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* 右寄せ */
+  gap: 1.8vw;
+}
+.header__catch {
+  font-size: clamp(.62rem, .62vw, .78rem);
+  letter-spacing: .12em;
+  color: #d8d5cf;
+}
+
+/* 三本線のメニューボタン（span 3本を上から 0px / 7px / 14px に配置） */
+.menu-btn {
+  position: relative;
+  width: 24px;
+  height: 16px;
+}
+.menu-btn span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: #fff;
+}
+.menu-btn span:nth-child(1) { top: 0; }
+.menu-btn span:nth-child(2) { top: 7px; }
+.menu-btn span:nth-child(3) { top: 14px; }
+
+/* =========================================================
+   Hero（トップ画像）
+   ========================================================= */
+.hero { position: relative; background: #000; }
+.hero__visual { position: relative; }
+.hero__visual img { width: 100%; }
+/* 画像の下端を背景色になじませるグラデーション */
+.hero__visual::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 12%;
+  background: linear-gradient(transparent, var(--color-bg));
+}
+
+/* 文章：画像の中の「隼 Hayabusa」ロゴに合わせて、% で位置を指定 */
+.hero__content {
+  position: absolute;
+  left: 17%;
+  top: 29%;
+  width: 40%;
+}
+/* 「THE ULTIMATE SPORT」 */
+.hero__sub {
+  font-family: var(--font-en);
+  font-size: clamp(.7rem, 1vw, 1.1rem);
+  letter-spacing: .28em;
+  color: var(--color-gold);
+  margin-bottom: 9vw; /* 画像の中の Hayabusa ロゴの分だけ下をあける */
+}
+/* 「その美しさは、走りのためにある。」 */
+.hero__title {
+  font-family: var(--font-mincho);
+  font-weight: 500;
+  font-size: clamp(1.1rem, 1.9vw, 2.3rem);
+  line-height: 1.5;
+  letter-spacing: .12em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .6); /* 文字に影を付けて読みやすく */
+}
+.hero__text {
+  margin: 1.2vw 0 1.6vw;
+  font-size: clamp(.72rem, .9vw, 1rem);
+  line-height: 1.85;
+  letter-spacing: .1em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .7);
+}
+/* SCROLL ボタン */
+.hero__scroll {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.6vw;
+  padding: .7vw 1.6vw;
+  border: 1px solid var(--color-gold);
+  font-family: var(--font-en);
+  font-size: clamp(.68rem, .82vw, .9rem);
+  letter-spacing: .18em;
+  background: rgba(0, 0, 0, .25);
+  transition: background .3s, color .3s;
+}
+.hero__scroll:hover { background: var(--color-gold); color: var(--color-bg); }
+/* 下向きの矢印「∨」（四角の右と下の線だけを表示して 45度回転） */
+.chevron {
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(45deg);
+}
+
+/* 右側の 01〜04 */
+.pager {
+  position: absolute;
+  right: 2.4%;
+  top: 66%;
+  display: flex;
+  flex-direction: column; /* 縦に並べる */
+  gap: .9vw;
+  font-family: var(--font-en);
+  font-size: clamp(.7rem, .8vw, .9rem);
+  letter-spacing: .08em;
+}
+.pager a { display: block; color: #cfccc6; transition: color .3s; }
+.pager a:hover,
+.pager a.is-current { color: #fff; }
+/* 選択中の番号の下に金色の線 */
+.pager a.is-current::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 1px;
+  margin-top: 4px;
+  background: var(--color-gold);
+}
+
+/* =========================================================
+   Design
+   ========================================================= */
+.design {
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--color-bg-2) 100%);
+  border-top: 1px solid var(--color-line-gray);
+}
+/* 4列：番号 / 文章 / 写真 / 縦書きラベル */
+.design__inner {
+  grid-template-columns: var(--num-col) minmax(340px, 1fr) minmax(0, 1.9fr) 9vw;
+}
+
+/* 写真6枚（3列 × 2段）。すき間 1px に背景色を見せて、細い区切り線にしています */
+.design__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--color-line-gray);
+  border: 1px solid var(--color-line-gray);
+}
+.design__grid li { overflow: hidden; aspect-ratio: 1.8 / 1; background: #000; }
+.design__grid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 枠に合わせて写真を切り抜く */
+  transition: transform .6s ease, opacity .6s;
+}
+.design__grid li:hover img { transform: scale(1.06); } /* マウスを乗せると少し拡大 */
+
+/* 右上の「AERODYNAMIC BEAUTY」 */
+.design__vertical {
+  align-self: start; /* 上にそろえる */
+  padding: 4px 0 4px 16px;
+  border-left: 1px solid var(--color-line-gray);
+  font-family: var(--font-en);
+  font-size: clamp(.62rem, .68vw, .78rem);
+  letter-spacing: .2em;
+  line-height: 2.2;
+  color: var(--color-muted);
+}
+
+/* =========================================================
+   Performance
+   ========================================================= */
+.performance { padding: 2.2vw 0; overflow: hidden; }
+/* 背景の写真（セクション全体に敷く） */
+.performance__bg { position: absolute; inset: 0; }
+.performance__bg img { width: 100%; height: 100%; object-fit: cover; }
+/* 写真の上に黒いグラデーションを重ねて、左側の文字を読みやすくする */
+.performance__bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, .88) 0%,
+    rgba(0, 0, 0, .55) 32%,
+    rgba(0, 0, 0, .15) 55%,
+    rgba(0, 0, 0, .45) 100%);
+}
+
+/* 3列：番号 / 文章 / スペック表 */
+.performance__inner {
+  position: relative; /* 背景写真より手前に表示するため */
+  grid-template-columns: var(--num-col) 1fr minmax(320px, 28vw);
+}
+.performance .sec-desc { color: #e2dfd9; }
+
+/* スペック表のパネル */
+.spec {
+  background: var(--color-panel);
+  border: 1px solid var(--color-line-gray);
+  padding: 1.8vw 2vw 1.2vw;
+  backdrop-filter: blur(4px); /* パネルの後ろをぼかす */
+}
+.spec__item + .spec__item { margin-top: .9vw; } /* 2つ目以降の項目の上にだけ余白 */
+.spec__item dt { /* ENGINE などの項目名 */
+  font-family: var(--font-en);
+  font-size: .68rem;
+  letter-spacing: .15em;
+  color: var(--color-gold);
+}
+.spec__item dd { line-height: 1.4; }
+.spec__item strong { /* 1,340 などの大きな数字 */
+  font-family: var(--font-en);
+  font-weight: 400;
+  font-size: clamp(1.3rem, 1.6vw, 1.8rem);
+  letter-spacing: .02em;
+}
+.spec__unit { margin-left: 4px; font-size: .85rem; }                    /* 単位 */
+.spec__note { margin-left: 6px; font-size: .8rem; color: #d8d5cf; }     /* 補足 */
+.spec__item small { display: block; font-size: .68rem; color: var(--color-muted); letter-spacing: .06em; }
+
+/* 下の3つのアイコン（電子制御 / IMU / エアロダイナミクス） */
+.spec__features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 1.4vw;
+  padding-top: 1vw;
+  border-top: 1px solid var(--color-line-gray);
+}
+.spec__features li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-inline: 6px;
+  line-height: 1.5;
+}
+.spec__features li + li { border-left: 1px solid var(--color-line-gray); } /* アイコンの間の縦線 */
+.spec__features svg {
+  width: 20px;
+  height: 20px;
+  margin-bottom: 6px;
+  fill: none;
+  stroke: #d8d5cf; /* アイコンの線の色 */
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+.spec__features strong { font-size: .72rem; font-weight: 500; }
+.spec__features span { font-size: .62rem; color: var(--color-muted); }
+
+/* =========================================================
+   History
+   ========================================================= */
+.history {
+  padding: 2vw 0;
+  /* 右下に夕日のようなオレンジの光を重ねた背景 */
+  background:
+    radial-gradient(ellipse 30% 70% at 100% 95%, rgba(214, 112, 40, .5), transparent 70%),
+    radial-gradient(ellipse 18% 40% at 88% 100%, rgba(120, 60, 30, .4), transparent 70%),
+    var(--color-bg);
+  border-top: 1px solid var(--color-line-gray);
+  overflow: hidden;
+}
+/* 4列：番号 / 文章 / 歴代モデル / 「隼」の文字 */
+.history__inner {
+  grid-template-columns: var(--num-col) minmax(260px, 1fr) minmax(0, 2.1fr) 12vw;
+}
+.history .sec-title { font-size: clamp(1.1rem, 1.3vw, 1.5rem); margin: .3em 0 .7em; }
+.history .sec-desc { font-size: clamp(.72rem, .75vw, .85rem); margin-bottom: 1.2em; }
+
+/* 「‹ 画像 ›」の横並び */
+.history__slider {
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+}
+/* 画像の左側に入っている文字部分を切り取り、バイク4台の部分だけ表示
+   （枠を画像の右側 78.5% の縦横比にして、画像を左にずらしています） */
+.history__timeline {
+  flex: 1;
+  min-width: 0; /* スマホで横にはみ出さないように */
+  overflow: hidden;
+  aspect-ratio: 785 / 209;
+}
+.history__timeline img {
+  width: 127.39%;      /* 100 ÷ 0.785 */
+  max-width: none;
+  margin-left: -27.39%; /* 左の文字部分を枠の外へ */
+}
+/* ‹ › ボタン（四角の上と左の線だけを表示して回転させる） */
+.slider-arrow {
+  flex-shrink: 0; /* 縮まないようにする */
+  width: 28px;
+  height: 28px;
+  position: relative;
+}
+.slider-arrow::before {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 10px; height: 10px;
+  border-top: 1px solid var(--color-gold);
+  border-left: 1px solid var(--color-gold);
+}
+.slider-arrow--prev::before { transform: translate(-30%, -50%) rotate(-45deg); } /* ‹ */
+.slider-arrow--next::before { transform: translate(-70%, -50%) rotate(135deg); } /* › */
+
+/* 右側の大きな「隼」の文字（文字にグラデーションをかけて、少し傾ける） */
+.history__kanji {
+  font-family: var(--font-brush);
+  font-size: 9vw;
+  line-height: 1;
+  text-align: center;
+  background: linear-gradient(160deg, #8d8a86 0%, #3c3a38 70%);
+  -webkit-background-clip: text; /* 背景のグラデーションを文字の形で切り抜く */
+  background-clip: text;
+  color: transparent;
+  transform: rotate(-8deg) skewX(-6deg);
+  opacity: .85;
+}
+
+/* =========================================================
+   Gallery
+   ========================================================= */
+/* 2列：写真 / 文章（文章は横幅の 24%） */
+.gallery {
+  display: grid;
+  grid-template-columns: 1fr 24%;
+  height: clamp(150px, 10vw, 220px);
+  border-block: 1px solid var(--color-line); /* 上下に金色の線 */
+}
+/* 写真5枚の横幅の比率 */
+.gallery__list {
+  display: grid;
+  grid-template-columns: 24fr 17fr 21fr 14fr 16fr;
+  overflow: hidden;
+}
+/* 写真を斜めに切り抜いて、少しずつ重ねて並べる
+   clip-path: polygon(左上, 右上, 右下, 左下) で四角形の形を指定 */
+.gallery__list li {
+  overflow: hidden;
+  margin-right: -1.6vw; /* 右隣の写真と重ねる */
+  clip-path: polygon(1.6vw 0, 100% 0, calc(100% - 1.6vw) 100%, 0 100%);
+}
+.gallery__list li:first-child { clip-path: polygon(0 0, 100% 0, calc(100% - 1.6vw) 100%, 0 100%); } /* 1枚目は左端をまっすぐに */
+.gallery__list li:last-child { margin-right: 0; }
+.gallery__list img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .6s ease;
+}
+.gallery__list li:hover img { transform: scale(1.08); }
+
+.gallery__text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* 縦方向の中央 */
+  padding: 1vw 2.6vw;
+  background: var(--color-bg);
+  border-left: 1px solid var(--color-line);
+}
+.gallery__title {
+  font-family: var(--font-mincho);
+  font-weight: 500;
+  font-size: clamp(.85rem, .95vw, 1.1rem);
+  line-height: 1.7;
+  letter-spacing: .1em;
+  margin: .4em 0 1em;
+}
+.gallery .btn-line { align-self: flex-start; } /* ボタンを横いっぱいに広げない */
+
+/* =========================================================
+   Footer（フッター）
+   ========================================================= */
+/* 左（ロゴ）・中央（メニュー）・右（SNS・コピーライト）を両端に広げて並べる */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 2.2vw var(--side);
+  background: var(--color-bg);
+}
+.footer__brand { display: flex; align-items: center; gap: 2vw; }
+.footer__logo {
+  font-family: var(--font-ja);
+  font-weight: 700;
+  font-style: italic;
+  font-size: 1.25rem;
+  letter-spacing: .02em;
+}
+.footer__model { font-family: var(--font-script); font-size: 1.35rem; }
+
+.footer__nav {
+  display: flex;
+  flex-wrap: wrap; /* 入りきらないときは折り返す */
+  justify-content: center;
+  font-family: var(--font-en);
+  font-size: .62rem;
+  letter-spacing: .12em;
+}
+/* 2つ目以降のメニューの前に「/」を入れる */
+.footer__nav li + li::before {
+  content: "/";
+  margin: 0 1.2em;
+  color: var(--color-muted);
+}
+.footer__nav a { transition: color .3s; }
+.footer__nav a:hover,
+.footer__nav a.is-current { color: var(--color-gold); }
+
+.footer__right { display: flex; align-items: center; gap: 2.4vw; }
+.sns { display: flex; gap: 18px; }
+.sns a { display: block; width: 18px; height: 18px; color: #d8d5cf; transition: color .3s; }
+.sns a:hover { color: var(--color-gold); }
+.sns svg { width: 100%; height: 100%; }
+.footer__copy { font-size: .6rem; color: var(--color-muted); letter-spacing: .04em; }
+
+/* =========================================================
+   Responsive（画面サイズごとの調整）
+   @media (max-width: 〇〇px) { } の中は、画面幅が〇〇px 以下のときだけ有効
+   ========================================================= */
+
+/* ---------- 画面幅 1100px 以下（小さめのパソコン・タブレット横向き） ---------- */
+@media (max-width: 1100px) {
+  .design__inner { grid-template-columns: var(--num-col) 1fr 1.6fr; }
+  .design__vertical { display: none; } /* 右の縦書きラベルを隠す */
+  .history__inner { grid-template-columns: var(--num-col) 1fr 1.7fr; }
+  .history__kanji { display: none; }   /* 右の「隼」を隠す */
+  .footer { flex-wrap: wrap; justify-content: center; }
+}
+
+/* ---------- 画面幅 900px 以下（タブレット縦向き・スマホ） ---------- */
+@media (max-width: 900px) {
+  :root { --side: 20px; } /* 左右の余白を固定の 20px に */
+
+  /* Header：メニューを隠して、メニューボタンだけにする */
+  .header { height: 64px; padding-inline: var(--side); grid-template-columns: 1fr auto; }
+  .header__logo { left: 0; top: 0; width: 40%; height: 64px; }
+  .gnav, .header__catch { display: none; }
+  .header__right { grid-column: 2; }
+
+  /* Hero：文章を画像の上に重ねず、画像の下に並べる */
+  .hero__content {
+    position: static;
+    width: auto;
+    padding: 28px var(--side) 48px;
+  }
+  .hero__sub { margin-bottom: 12px; font-size: .8rem; }
+  .hero__title { font-size: 1.6rem; }
+  .hero__text { margin: 16px 0 28px; font-size: .9rem; }
+  .hero__scroll { gap: 20px; padding: 10px 22px; font-size: .8rem; }
+  .pager { display: none; }
+
+  /* 各セクション：横並びをやめて縦1列にする
+     （minmax(0, 1fr) にしないと、中身が長いときに画面からはみ出します） */
+  .section { padding: 56px 0; }
+  .section__inner { grid-template-columns: minmax(0, 1fr) !important; row-gap: 28px; }
+  .sec-num { display: none; }
+  .sec-desc br { display: none; } /* 文章の改行をなくして、画面幅で自然に折り返す */
+
+  .design__grid { grid-template-columns: repeat(2, 1fr); } /* 写真を2列に */
+
+  .performance__bg::after { background: rgba(0, 0, 0, .7); } /* 全体を暗くして文字を読みやすく */
+  .spec { padding: 24px 20px 16px; }
+  .spec__item + .spec__item { margin-top: 14px; }
+  .spec__features { margin-top: 20px; padding-top: 16px; }
+
+  .history__slider { gap: 4px; }
+
+  /* Gallery：写真3枚（正方形）+ その下に文章 */
+  .gallery { grid-template-columns: 1fr; height: auto; }
+  .gallery__list { grid-template-columns: repeat(3, 1fr); }
+  .gallery__list li,
+  .gallery__list li:first-child { margin-right: 0; clip-path: none; aspect-ratio: 1; }
+  .gallery__list li:nth-child(n + 4) { display: none; } /* 4枚目以降を隠す */
+  .gallery__text { padding: 32px var(--side); border-left: none; }
+
+  /* Footer：縦に並べる */
+  .footer { flex-direction: column; padding: 32px var(--side); gap: 20px; }
+  .footer__right { flex-direction: column; gap: 14px; }
+}
