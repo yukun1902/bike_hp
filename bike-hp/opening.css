@@ -293,33 +293,52 @@ html.is-opening .footer { visibility: hidden; } /* 本編を見えなくする *
 .op-ignition:focus-visible { outline: 1px solid var(--op-gold); outline-offset: 8px; }
 
 /* ---------- SKIP ボタン ---------- */
+/* サイト内の金色の枠線ボタン（.btn-line）と同じテイストにそろえています */
 .op-skip {
   position: absolute;
-  right: 20px;
-  bottom: 20px;
-  padding: 8px 12px;
-  background: none;
-  border: none;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 18px 10px 22px;
+  background: rgba(0, 0, 0, .35);                 /* 画像の上でも読みやすいように薄い黒 */
+  border: 1px solid rgba(201, 160, 99, .6);       /* 金色の細い枠線 */
   cursor: pointer;
   font-family: "Marcellus", serif;
-  font-size: .68rem;
+  font-size: clamp(.78rem, 1.6vw, .9rem);         /* 画面幅に合わせて少し大きく */
   letter-spacing: .3em;
-  color: #6f6b64;
+  color: #e6e1d8;                                 /* 明るい色で見やすく */
   opacity: 0;
-  transition: color .3s, opacity 1s ease 2s;
+  transition: color .3s, background .3s, border-color .3s, opacity 1s ease 2s;
+}
+/* 右側の小さな矢印「›」（四角の上と右の線だけを表示して 45度回転） */
+.op-skip::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-top: 1px solid currentColor;
+  border-right: 1px solid currentColor;
+  transform: rotate(45deg);
 }
 .opening.is-ready .op-skip { opacity: 1; }
-.op-skip:hover { color: #cfcac1; }
+/* マウスを乗せたら金色に塗りつぶす（.btn-line と同じ） */
+.op-skip:hover {
+  background: var(--op-gold);
+  border-color: var(--op-gold);
+  color: #0a0a0b;
+}
+.op-skip:focus-visible { outline: 1px solid var(--op-gold); outline-offset: 4px; }
 
 /* ---------- SOUND ON / OFF ボタン（左下） ---------- */
 .op-sound {
   position: absolute;
-  left: 20px;
-  bottom: 20px;
+  left: 24px;
+  bottom: 24px;        /* 右下の SKIP と高さをそろえる */
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
+  padding: 12px 12px;
   background: none;
   border: none;
   cursor: pointer;

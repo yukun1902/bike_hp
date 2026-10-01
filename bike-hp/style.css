@@ -212,8 +212,10 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   color: #d8d5cf;
 }
 
-/* 三本線のメニューボタン（span 3本を上から 0px / 7px / 14px に配置） */
+/* 三本線のメニューボタン（span 3本を上から 0px / 7px / 14px に配置）
+   ※ PC ではメニューが見えているので非表示。画面幅 900px 以下のときだけ表示します（下の Responsive を参照） */
 .menu-btn {
+  display: none;
   position: relative;
   width: 24px;
   height: 16px;
@@ -637,6 +639,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   .header__logo { left: 0; top: 0; width: 40%; height: 64px; }
   .gnav, .header__catch { display: none; }
   .header__right { grid-column: 2; }
+  .menu-btn { display: block; } /* スマホではメニューボタンを表示 */
 
   /* Hero：文章を画像の上に重ねず、画像の下に並べる */
   .hero__content {
